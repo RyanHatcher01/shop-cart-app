@@ -23,9 +23,6 @@ export class Product {
     @BeforeInsert()
     @BeforeUpdate()
     validate(){
-    if (this.stock < 0){
-        throw new Error('Stock must be positive');
-    } 
     this.validateImage();
 }
 private validateImage() {
