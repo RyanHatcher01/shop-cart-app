@@ -1,18 +1,48 @@
-version: '3'
+version: '3.8'
+
 services:
   web:
     build: .
     ports:
-      - "3000:3000"
+      - "3000:3000"  # Expose the Next.js app on port 3000
+    depends_on:
+      db:
+        condition: service_healthy  # Wait for db service to be marked healthy
+    environment:
+      - NODE_ENV=development
+      - PORT=3000
+      - DB_HOST=db              # Database service name
+      - DB_PORT=3306            # MySQL default port
+      - DB_USER=username        # Match MYSQL_USER in db service
+      - DB_PASSWORD=password    # Match MYSQL_PASSWORD in db service
+      - DB_NAME=shop            # Match MYSQL_DATABASE in db service
+    networks:
+      - app-network
+    restart: always  # Automatically restart the container if it stops unexpectedly
 
   db:
-    image: "mysql"
+    image: mysql:latest
     environment:
-      - MYSQL_ROOT_PASSWORD: password
-      - MYSQL_USER: user
-      - MYSQL_PASSWORD: password
+      MYSQL_ROOT_PASSWORD: rootpassword  # Root password for MySQL
+      MYSQL_DATABASE: shop               # Default database name
+      MYSQL_USER: username               # Custom MySQL username
+      MYSQL_PASSWORD: password           # Custom MySQL password
     volumes:
-      - db-data:/app
+      - db-data:/var/lib/mysql           # Persistent data for MySQL
+    ports:
+      - "3306:3306"  # Expose MySQL on port 3306
+    networks:
+      - app-network
+    restart: always  # Restart MySQL if the container stops
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1"]  # Verify MySQL is running and reachable
+      interval: 15s   # Allow more time between health checks
+      retries: 10     # Increase retries before marking unhealthy
+      timeout: 10s    # Increase timeout to handle delays
 
 volumes:
   db-data:
+
+networks:
+  app-network:
+    driver: bridge
